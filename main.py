@@ -1,111 +1,85 @@
-import streamlit as st
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+import streamlit as st
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Titre de l'application
-st.title("Exploration et Prédiction sur la Base IRIS 🌼")
+st.title("Analyse des Données IRIS")
+st.markdown("### By 3Stoms")
 
-# Chemin vers le fichier de données
-DATA_PATH = "data/IRIS.csv"
+# Chargement des données
+st.header("1. Chargement de la Base de Données")
+file_path = "./data/IRIS.csv"
+data = pd.read_csv(file_path)
+st.dataframe(data)
 
-# Fonction pour charger les données
-@st.cache_data
-def load_data(file_path):
-    """Charge les données depuis un fichier CSV."""
-    try:
-        data = pd.read_csv(file_path)
-        return data
-    except FileNotFoundError:
-        st.error("Erreur : Le fichier de données est introuvable.")
-        return None
-    except pd.errors.ParserError:
-        st.error("Erreur : Problème lors de la lecture du fichier CSV.")
-        return None
+# Description des données
+st.subheader("Aperçu des données :")
+st.write(data.describe())
 
-# Charger les données
-data = load_data(DATA_PATH)
+# Manipulation des données (KNN)
+st.header("2. Manipulation des Données avec KNN")
 
-if data is not None:
-    # Section 1 : Exploration des données
-    st.header("1️⃣ Exploration des Données")
-    st.subheader("Aperçu des Données")
-    st.write(data.head())
+# Préparation des données
+X = data.iloc[:, :-1].values  # Toutes les colonnes sauf la dernière
+y = data.iloc[:, -1].values  # Dernière colonne
 
-    st.subheader("Statistiques Descriptives")
-    st.write(data.describe())
+# Séparation en jeu d'entraînement et de test
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
 
-    # Graphiques interactifs
-    st.subheader("Visualisation des Données")
-    graph_type = st.radio(
-        "Choisissez le type de graphique :",
-        ("Boxplot", "Histogramme", "Scatter Plot")
-    )
+# KNN
+k = st.slider("Choisissez le nombre de voisins (k) pour KNN", min_value=1, max_value=10, value=5)
+knn = KNeighborsClassifier(n_neighbors=k)
+knn.fit(X_train, y_train)
+y_pred = knn.predict(X_test)
 
-    if graph_type == "Boxplot":
-        st.write("Boxplot des caractéristiques :")
-        plt.figure(figsize=(10, 5))
-        sns.boxplot(data=data, palette="pastel")
-        st.pyplot(plt)
-        plt.clf()  # Nettoyer la figure pour éviter des chevauchements
+# Résultats du modèle
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+st.write(f"### Précision du modèle : {accuracy:.2f}")
+st.write("### Matrice de Confusion :")
+st.dataframe(conf_matrix)
 
-    elif graph_type == "Histogramme":
-        column = st.selectbox("Choisissez une colonne :", data.columns[:-1])
-        st.write(f"Histogramme de la colonne {column} :")
-        plt.figure(figsize=(10, 5))
-        sns.histplot(data[column], kde=True, color="blue")
-        st.pyplot(plt)
-        plt.clf()
+# Visualisations des données
+st.header("3. Visualisation des Données")
 
-    elif graph_type == "Scatter Plot":
-        x_col = st.selectbox("Axe X :", data.columns[:-1])
-        y_col = st.selectbox("Axe Y :", data.columns[:-1])
-        st.write(f"Scatter Plot entre {x_col} et {y_col} :")
-        plt.figure(figsize=(10, 5))
-        sns.scatterplot(x=data[x_col], y=data[y_col], hue=data['species'], palette="deep")
-        st.pyplot(plt)
-        plt.clf()
+# Distribution des classes
+st.subheader("Distribution des classes dans IRIS")
+fig, ax = plt.subplots()
+data['species'].value_counts().plot(kind='bar', color=['blue', 'green', 'orange'], ax=ax)
+ax.set_title("Distribution des Classes")
+st.pyplot(fig)
 
-    # Section 2 : Prédictions avec KNN
-    st.header("2️⃣ Prédiction avec l'Algorithme KNN")
-    if st.checkbox("Activer la Prédiction KNN"):
+# Scatterplot
+st.subheader("Relations entre les dimensions des fleurs")
+fig, ax = plt.subplots()
+sns.scatterplot(x=data['sepal_length'], y=data['sepal_width'], hue=data['species'], palette='muted', ax=ax)
+ax.set_title("Scatterplot des dimensions des sépales")
+st.pyplot(fig)
 
-        # Préparer les données pour KNN
-        X = data.iloc[:, :-1]  # Caractéristiques
-        y = data['species']  # Classe cible
+# Deuxième manipulation des données : Clustering
+st.header("4. Clustering avec K-Means")
 
-        # Division en jeu d'entraînement et de test
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+# K-Means
+num_clusters = st.slider("Nombre de clusters pour K-Means", min_value=2, max_value=5, value=3)
+kmeans = KMeans(n_clusters=num_clusters, random_state=1)
+clusters = kmeans.fit_predict(X)
 
-        # Choix de la valeur de K
-        k = st.slider("Choisissez la valeur de K :", 1, 15, 3)
+data['Cluster'] = clusters
 
-        # Création du modèle
-        model = KNeighborsClassifier(n_neighbors=k)
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+st.subheader("Résultats du Clustering :")
+st.write(data[['species', 'Cluster']].head())
 
-        # Afficher les résultats
-        st.subheader("Rapport de Classification")
-        st.text(classification_report(y_test, y_pred))
-
-        # Prédiction utilisateur
-        st.subheader("Tester une Nouvelle Observation")
-        inputs = []
-        for col in X.columns:
-            value = st.number_input(f"Valeur pour {col}", value=0.0)
-            inputs.append(value)
-
-        if st.button("Prédire"):
-            try:
-                result = model.predict([inputs])
-                st.success(f"La classe prédite est : {result[0]}")
-            except ValueError:
-                st.error("Erreur : Veuillez entrer des valeurs valides pour toutes les colonnes.")
+# Visualisation des clusters
+fig, ax = plt.subplots()
+sns.scatterplot(x=data['sepal_length'], y=data['sepal_width'], hue=data['Cluster'], palette='deep', ax=ax)
+ax.set_title("Clusters K-Means")
+st.pyplot(fig)
 
 # Footer
-st.write("---")
-st.write("Application créée avec ❤️ par [Votre Nom].")
+st.markdown("---")
+st.markdown("### By 3Stoms")
