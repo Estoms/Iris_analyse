@@ -1,0 +1,5 @@
+# Exclure les fichiers inutiles
+*.pyc
+__pycache__/
+.venv/
+data/*.csv  # Éviter d'ajouter de gros fichiers de données
