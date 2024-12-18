@@ -1,26 +1,31 @@
 import pandas as pd
 import streamlit as st
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Charger les données
-uploaded_file = "./data/IRIS.csv"
-data = pd.read_csv(uploaded_file)
+# === Application Titre ===
+st.title("Analyse et Clustering des Données IRIS")
+st.markdown("### By Estoms")
 
-# Interface Streamlit
-st.title("Clustering K-Means ")
-st.write("Explorez les clusters K-Means de manière interactive avec les données Iris.")
+# === Chargement des Données ===
+st.header("1. Chargement de la Base de Données")
+file_path = "./data/IRIS.csv"
+data = pd.read_csv(file_path)
+st.dataframe(data)
 
-# Afficher les premières lignes du dataset
-st.subheader("Aperçu des données")
-st.write(data.head())
+# Aperçu des données
+st.subheader("Aperçu des données :")
+st.write(data.describe())
 
-# Sélection des colonnes pour le clustering
-st.sidebar.subheader("Options de clustering")
-columns = st.sidebar.multiselect("Sélectionnez les colonnes pour le clustering :", data.columns, default=data.columns[1:4])
+# === Option : Clustering avec K-Means ===
+st.header("2. Clustering avec K-Means")
+columns = st.multiselect("Sélectionnez les colonnes pour le clustering :", data.columns[:-1], default=data.columns[1:4])
 
-# Vérifier qu'au moins deux colonnes sont sélectionnées
 if len(columns) < 2:
     st.error("Veuillez sélectionner au moins deux colonnes pour effectuer le clustering.")
 else:
@@ -28,44 +33,42 @@ else:
     scaler = StandardScaler()
     X = scaler.fit_transform(data[columns])
 
-    # Sélectionner le nombre de clusters
-    n_clusters = st.sidebar.slider("Nombre de clusters (k)", min_value=1, max_value=10, value=3, step=1)
+    # Sélection du nombre de clusters
+    n_clusters = st.slider("Nombre de clusters (k)", min_value=2, max_value=10, value=3)
 
-    # Calcul et affichage du WCSS pour la méthode du coude
-    st.subheader("Méthode du coude")
-    wcss = []
-    for i in range(1, 11):
-        kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0)
-        kmeans.fit(X)
-        wcss.append(kmeans.inertia_)
-
-    # Tracer le graphique du coude
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(range(1, 11), wcss, marker='o')
-    ax.set_title('La méthode du coude')
-    ax.set_xlabel('Nombre de clusters')
-    ax.set_ylabel('WCSS')
-    st.pyplot(fig)
-
-    # Appliquer K-means avec le k optimal
-    kmeans_optimal = KMeans(n_clusters=n_clusters, init='k-means++', max_iter=300, n_init=10, random_state=0)
-    y_kmeans_optimal = kmeans_optimal.fit_predict(X)
-
-    # Ajouter les clusters au dataframe
-    data['Cluster'] = y_kmeans_optimal
+    # K-Means
+    kmeans = KMeans(n_clusters=n_clusters, init='k-means++', max_iter=300, n_init=10, random_state=0)
+    data['Cluster'] = kmeans.fit_predict(X)
 
     # Visualisation des clusters
-    st.subheader(f"Visualisation des clusters pour k={n_clusters}")
-    fig, ax = plt.subplots(figsize=(8, 5))
-    scatter = ax.scatter(X[:, 0], X[:, 1], c=y_kmeans_optimal, cmap='viridis', s=50)
-    centers = kmeans_optimal.cluster_centers_
-    ax.scatter(centers[:, 0], centers[:, 1], c='red', s=200, alpha=0.75, label='Centres')
-    ax.set_title("Clusters et leurs centres")
-    ax.set_xlabel(columns[0])
-    ax.set_ylabel(columns[1])
-    ax.legend()
+    st.subheader("Visualisation des Clusters")
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=X[:, 0], y=X[:, 1], hue=data['Cluster'], palette='viridis', ax=ax)
+    ax.set_title("Clusters avec K-Means")
     st.pyplot(fig)
 
-    # Afficher les données avec les clusters
-    st.subheader("Données avec clusters")
-    st.write(data)
+# === Option : Classification avec KNN ===
+st.header("3. Classification avec KNN")
+X_knn = data.iloc[:, :-2].values  # Toutes les colonnes sauf les deux dernières
+if 'species' in data.columns:
+    y_knn = data['species'].values  # Cible
+
+    # Division des données
+    X_train, X_test, y_train, y_test = train_test_split(X_knn, y_knn, test_size=0.3, random_state=1)
+
+    # KNN
+    k = st.slider("Choisissez le nombre de voisins (k) pour KNN", min_value=1, max_value=10, value=5)
+    knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+
+    # Résultats
+    accuracy = accuracy_score(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred)
+    st.write(f"### Précision du modèle : {accuracy:.2f}")
+    st.write("### Matrice de Confusion :")
+    st.dataframe(conf_matrix)
+
+# === Footer ===
+st.markdown("---")
+st.markdown("### By Estoms")
