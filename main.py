@@ -3,8 +3,8 @@ import streamlit as st
 from sklearn.cluster import KMeans
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -46,6 +46,11 @@ if len(available_columns) >= 2:
     sns.scatterplot(x=normalized_data[:, 0], y=normalized_data[:, 1], hue=iris_data['Groupes'], palette="cool", ax=ax)
     ax.set_title("Clusters Générés par K-Means")
     st.pyplot(fig)
+
+    # Affichage des centres des clusters
+    st.subheader("Centres des Clusters")
+    cluster_centers = kmeans_model.cluster_centers_
+    st.write(pd.DataFrame(cluster_centers, columns=available_columns))
 else:
     st.warning("Veuillez sélectionner au moins deux colonnes pour effectuer le clustering.")
 
@@ -76,6 +81,21 @@ if 'species' in iris_data.columns:
     st.write("### Matrice de Confusion :")
     st.dataframe(confusion_mat)
 
+    # Rapport de classification
+    st.subheader("Rapport de Classification")
+    classification_rep = classification_report(y_test, predictions, output_dict=True)
+    st.dataframe(pd.DataFrame(classification_rep).transpose())
+
+# === Nouvelle Fonctionnalité : Analyse des Corrélations ===
+st.header("4. Analyse des Corrélations")
+correlation_method = st.radio("Choisissez la méthode de corrélation :", ["pearson", "spearman", "kendall"])
+st.subheader("Matrice de Corrélation")
+correlation_matrix = iris_data.corr(method=correlation_method)
+fig, ax = plt.subplots()
+sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
+ax.set_title("Matrice de Corrélation des Attributs")
+st.pyplot(fig)
+
 # === Footer ===
 st.markdown("---")
-st.markdown("#### Application développée par Estoms")
+st.markdown("#### by Estoms")
