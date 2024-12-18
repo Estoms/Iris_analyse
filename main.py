@@ -59,7 +59,7 @@ st.header("3. Prédiction des Espèces avec KNN")
 
 if 'species' in iris_data.columns:
     # Préparation des données
-    X_features = iris_data.iloc[:, :-2].values
+    X_features = iris_data.select_dtypes(include=['number']).iloc[:, :-1].values  # Colonnes numériques
     y_target = iris_data['species'].values
 
     # Division des jeux de données
@@ -90,11 +90,18 @@ if 'species' in iris_data.columns:
 st.header("4. Analyse des Corrélations")
 correlation_method = st.radio("Choisissez la méthode de corrélation :", ["pearson", "spearman", "kendall"])
 st.subheader("Matrice de Corrélation")
-correlation_matrix = iris_data.corr(method=correlation_method)
-fig, ax = plt.subplots()
-sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
-ax.set_title("Matrice de Corrélation des Attributs")
-st.pyplot(fig)
+
+# Filtrer les colonnes numériques pour éviter les erreurs
+numerical_data = iris_data.select_dtypes(include=['number'])
+
+if not numerical_data.empty:
+    correlation_matrix = numerical_data.corr(method=correlation_method)
+    fig, ax = plt.subplots()
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
+    ax.set_title("Matrice de Corrélation des Attributs Numériques")
+    st.pyplot(fig)
+else:
+    st.warning("Aucune colonne numérique trouvée pour calculer la matrice de corrélation.")
 
 # === Footer ===
 st.markdown("---")
