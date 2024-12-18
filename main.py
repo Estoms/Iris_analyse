@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 # Charger les données
-uploaded_file = "Iris.csv"  # Charger le fichier Iris fourni
+uploaded_file = "./data/IRIS.csv"
 data = pd.read_csv(uploaded_file)
 
 # Interface Streamlit
