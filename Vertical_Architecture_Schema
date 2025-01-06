@@ -1,0 +1,21 @@
+digraph {
+	rankdir=TB size="8,12"
+	node [shape=ellipse style=rounded]
+	SGU [label="Service de Gestion des Utilisateurs"]
+	SGP [label="Service de Gestion des Profils"]
+	SGOE [label="Service de Gestion des Offres d'Emploi"]
+	SNC [label="Service de Notifications"]
+	SGC [label="Service de Gestion des Candidatures"]
+	SRM [label="Service de Recherche et Matching"]
+	SSP [label="Service de Sécurité et Permissions"]
+	SSP -> SGU [label="Gestion des accès et permissions"]
+	SGU -> SGP [label="Création et gestion des profils"]
+	SGOE -> SRM [label="Transmission des données d'offres"]
+	SGP -> SRM [label="Données de profils pour matching"]
+	SRM -> SNC [label="Alertes de correspondances"]
+	SRM -> SGC [label="Gestion des candidatures correspondantes"]
+	SGC -> SNC [label="Notifications de statut des candidatures"]
+	SGU -> SGC [label="Gestion des utilisateurs candidats"]
+	SGOE -> SGC [label="Lien avec les offres d'emploi"]
+	SNC -> SGU [label="Personnalisation des notifications"]
+}
